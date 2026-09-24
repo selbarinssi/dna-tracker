@@ -19,6 +19,10 @@ export default async function TrackingPage() {
 
   const orders = (data as Order[]) || [];
 
+  // For now we allow editing for everyone who can see Tracking.
+  // Later we will restrict it based on the real user role.
+  const canEdit = true;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -32,7 +36,7 @@ export default async function TrackingPage() {
         </div>
       </div>
 
-      <OrderTable orders={orders} />
+      <OrderTable orders={orders} canEdit={canEdit} />
     </div>
   );
 }
