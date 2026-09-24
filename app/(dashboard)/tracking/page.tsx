@@ -7,21 +7,21 @@ import type { Order } from "@/types";
 export default async function TrackingPage() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*")
-    .eq("is_archived", false)
-    .order("created_at", { ascending: false });
+  const [{ data: ordersData }, { data: rootcausesData }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select("*")
+      .eq("is_archived", false)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("rootcauses")
+      .select("id, label")
+      .eq("is_active", true)
+      .order("label"),
+  ]);
 
-  if (error) {
-    console.error("Error fetching orders:", error);
-  }
-
-  const orders = (data as Order[]) || [];
-
-  // For now we allow editing for everyone who can see Tracking.
-  // Later we will restrict it based on the real user role.
-  const canEdit = true;
+  const orders = (ordersData as Order[]) || [];
+  const rootcauses = rootcausesData || [];
 
   return (
     <div className="space-y-6">
@@ -36,7 +36,11 @@ export default async function TrackingPage() {
         </div>
       </div>
 
-      <OrderTable orders={orders} canEdit={canEdit} />
+      <OrderTable
+        orders={orders}
+        rootcauses={rootcauses}
+        canEdit={true}
+      />
     </div>
   );
 }
