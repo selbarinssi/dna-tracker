@@ -139,14 +139,14 @@ order-tracker/
 ├── supabase/migrations/
 └── ...
 
-Current Status
+### Current Status
 
 Product definition: Locked
 Status flow, roles, SolvingOwner routing, tabs, and midnight behaviour: Agreed
 Next step: Implementation (foundation → auth → UI → core pages)
 
 
-Roadmap (High Level)
+### Roadmap (High Level)
 
 Foundation (types, constants, database schema, RLS)
 Authentication & role-based access
