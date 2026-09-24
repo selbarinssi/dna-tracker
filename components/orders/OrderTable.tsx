@@ -2,6 +2,8 @@
 
 "use client";
 
+import { RootcauseSelect } from "./RootcauseSelect";
+import { StatusBadge } from "./StatusBadge"; // if you want to show badge when not editing
 import { useState } from "react";
 import type { Order, OrderStatus, SolvingOwner } from "@/types";
 import { StatusSelect } from "./StatusSelect";
@@ -15,10 +17,15 @@ import {
 
 interface OrderTableProps {
   orders: Order[];
+  rootcauses: { id: string; label: string }[];
   canEdit?: boolean;
 }
 
-export function OrderTable({ orders: initialOrders, canEdit = false }: OrderTableProps) {
+export function OrderTable({
+  orders: initialOrders,
+  rootcauses,
+  canEdit = false,
+}: OrderTableProps) {
   const [orders, setOrders] = useState(initialOrders);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const supabase = createClient();
@@ -26,7 +33,7 @@ export function OrderTable({ orders: initialOrders, canEdit = false }: OrderTabl
 
   async function updateOrder(
     id: string,
-    field: "status" | "solving_owner" | "comment",
+    field: "status" | "solving_owner" | "comment" | "rootcause_id",
     value: any
   ) {
     setUpdatingId(id);
@@ -171,6 +178,9 @@ export function OrderTable({ orders: initialOrders, canEdit = false }: OrderTabl
                 <th className="text-left font-medium text-muted px-4 py-3 whitespace-nowrap">
                   Solving Owner
                 </th>
+                <th className="text-left font-medium text-muted px-4 py-3 whitespace-nowrap">
+                  Rootcause
+                </th>
                 <th className="text-left font-medium text-muted px-4 py-3 min-w-[180px]">
                   Comment
                 </th>
@@ -309,6 +319,21 @@ export function OrderTable({ orders: initialOrders, canEdit = false }: OrderTabl
                       />
                     ) : (
                       order.solving_owner || "—"
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {canEdit ? (
+                      <RootcauseSelect
+                        value={order.rootcause_id}
+                        rootcauses={rootcauses}
+                        onChange={(value) =>
+                          updateOrder(order.id, "rootcause_id", value)
+                        }
+                        disabled={updatingId === order.id}
+                        required={order.status === "Not Done"}
+                      />
+                    ) : (
+                      rootcauses.find((r) => r.id === order.rootcause_id)?.label || "—"
                     )}
                   </td>
                   <td className="px-4 py-3">
