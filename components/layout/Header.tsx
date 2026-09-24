@@ -5,6 +5,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Sidebar } from "./Sidebar";
 
 export function Header() {
   const [email, setEmail] = useState<string | null>(null);
@@ -24,23 +25,29 @@ export function Header() {
   }
 
   return (
-    <header className="h-14 border-b border-border bg-white flex items-center justify-between px-6">
-      <div className="text-sm text-muted">
-        {/* We can add page title later */}
-      </div>
+    <header className="border-b border-border bg-white">
+      {/* Top row */}
+      <div className="h-14 flex items-center justify-between px-6">
+        <div className="flex items-center gap-6">
+          <h1 className="font-serif text-lg text-ink tracking-tight">
+            Order Tracker
+          </h1>
+          <Sidebar />
+        </div>
 
-      <div className="flex items-center gap-4">
-        {email && (
-          <span className="text-sm text-muted-light truncate max-w-[180px]">
-            {email}
-          </span>
-        )}
-        <button
-          onClick={handleSignOut}
-          className="text-sm text-muted hover:text-ink transition-colors"
-        >
-          Sign out
-        </button>
+        <div className="flex items-center gap-4">
+          {email && (
+            <span className="text-sm text-muted-light truncate max-w-[180px]">
+              {email}
+            </span>
+          )}
+          <button
+            onClick={handleSignOut}
+            className="text-sm text-muted hover:text-ink transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </header>
   );
