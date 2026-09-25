@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseExcel } from "@/lib/excel";
 import { DEFAULT_STATUS } from "@/lib/constants";
+import { assignTrackers } from "@/lib/assignment";
+import type { Tracker } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,10 +20,30 @@ export async function POST(request: NextRequest) {
     const rows = await parseExcel(buffer);
 
     if (rows.length === 0) {
-      return NextResponse.json({ error: "No valid rows found in the Excel file" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No valid rows found in the Excel file" },
+        { status: 400 }
+      );
     }
 
     const supabase = createAdminClient();
+
+    // Active trackers for assignment
+    const { data: trackersData, error: trackersError } = await supabase
+      .from("trackers")
+      .select("*")
+      .eq("is_active", true);
+
+    if (trackersError) {
+      console.error("Trackers fetch error:", trackersError);
+      return NextResponse.json(
+        { error: "Failed to load trackers" },
+        { status: 500 }
+      );
+    }
+
+    const trackers = (trackersData as Tracker[]) || [];
+    const assignedRows = assignTrackers(rows, trackers);
 
     // 1. Full replace: delete all non-archived orders
     const { error: deleteError } = await supabase
@@ -31,17 +53,19 @@ export async function POST(request: NextRequest) {
 
     if (deleteError) {
       console.error("Delete error:", deleteError);
-      return NextResponse.json({ error: "Failed to clear existing orders" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to clear existing orders" },
+        { status: 500 }
+      );
     }
 
-    // 2. Insert new rows
-    const ordersToInsert = rows.map((row) => ({
+    // 2. Insert new rows (with tracker_id)
+    const ordersToInsert = assignedRows.map((row) => ({
       ...row,
       status: DEFAULT_STATUS,
       solving_owner: null,
       rootcause_id: null,
       comment: null,
-      tracker_id: null,
       is_archived: false,
     }));
 
@@ -51,18 +75,20 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error("Insert error:", insertError);
-      return NextResponse.json({ error: "Failed to insert orders" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Failed to insert orders" },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
       count: rows.length,
+      trackersUsed: trackers.length,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Upload error:", err);
-    return NextResponse.json(
-      { error: err.message || "Upload failed" },
-      { status: 500 }
-    );
+    const message = err instanceof Error ? err.message : "Upload failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
