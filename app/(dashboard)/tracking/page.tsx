@@ -2,12 +2,16 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { OrderTable } from "@/components/orders/OrderTable";
-import type { Order } from "@/types";
+import type { Order, Tracker } from "@/types";
 
 export default async function TrackingPage() {
   const supabase = await createClient();
 
-  const [{ data: ordersData }, { data: rootcausesData }] = await Promise.all([
+  const [
+    { data: ordersData },
+    { data: rootcausesData },
+    { data: trackersData },
+  ] = await Promise.all([
     supabase
       .from("orders")
       .select("*")
@@ -19,10 +23,15 @@ export default async function TrackingPage() {
       .select("id, label")
       .eq("is_active", true)
       .order("label"),
+    supabase
+      .from("trackers")
+      .select("*")
+      .order("name", { ascending: true }),
   ]);
 
   const orders = (ordersData as Order[]) || [];
   const rootcauses = rootcausesData || [];
+  const trackers = (trackersData as Tracker[]) || [];
 
   return (
     <div className="space-y-6">
@@ -40,6 +49,7 @@ export default async function TrackingPage() {
       <OrderTable
         orders={orders}
         rootcauses={rootcauses}
+        trackers={trackers}
         canEdit={true}
       />
     </div>
