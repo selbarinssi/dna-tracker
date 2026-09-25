@@ -31,29 +31,45 @@ export function OrderTable({
   const supabase = createClient();
   const { visible, toggle, isVisible, ready } = useColumnVisibility();
 
-  async function updateOrder(
-    id: string,
-    field: "status" | "solving_owner" | "comment" | "rootcause_id",
-    value: any
-  ) {
-    setUpdatingId(id);
-
-    setOrders((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, [field]: value } : o))
-    );
-
-    const { error } = await supabase
-      .from("orders")
-      .update({ [field]: value })
-      .eq("id", id);
-
-    if (error) {
-      console.error("Update failed:", error);
-      setOrders(initialOrders);
+    async function updateOrder(
+      id: string,
+      field: "status" | "solving_owner" | "comment" | "rootcause_id",
+      value: any
+    ) {
+      setUpdatingId(id);
+  
+      // Optimistic update
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === id
+            ? { ...o, [field]: value, last_updated: new Date().toISOString() }
+            : o
+        )
+      );
+  
+      const { error } = await supabase
+        .from("orders")
+        .update({
+          [field]: value,
+          last_updated: new Date().toISOString(),
+        })
+        .eq("id", id);
+  
+      if (error) {
+        console.error("Update failed:", error);
+        // Roll back only this order, keep other local changes
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === id
+              ? initialOrders.find((orig) => orig.id === id) || o
+              : o
+          )
+        );
+        alert(`Failed to save: ${error.message}`);
+      }
+  
+      setUpdatingId(null);
     }
-
-    setUpdatingId(null);
-  }
 
   if (orders.length === 0) {
     return (
