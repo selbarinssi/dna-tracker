@@ -3,7 +3,7 @@
 "use client";
 
 import { RootcauseSelect } from "./RootcauseSelect";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Order, Tracker } from "@/types";
 import { StatusSelect } from "./StatusSelect";
 import { SolvingOwnerSelect } from "./SolvingOwnerSelect";
@@ -31,6 +31,64 @@ export function OrderTable({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const supabase = createClient();
   const { visible, toggle, isVisible, ready } = useColumnVisibility();
+
+    // Keep local state in sync if server re-fetches (e.g. navigation)
+  useEffect(() => {
+    setOrders(initialOrders);
+  }, [initialOrders]);
+
+  // Live updates from other users
+  useEffect(() => {
+    const channel = supabase
+      .channel("orders-tracking")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+        },
+        (payload) => {
+          if (payload.eventType === "UPDATE") {
+            const updated = payload.new as Order;
+            // Ignore archived rows on Tracking
+            if (updated.is_archived) {
+              setOrders((prev) => prev.filter((o) => o.id !== updated.id));
+              return;
+            }
+            setOrders((prev) => {
+              const exists = prev.some((o) => o.id === updated.id);
+              if (exists) {
+                return prev.map((o) =>
+                  o.id === updated.id ? { ...o, ...updated } : o
+                );
+              }
+              return prev;
+            });
+          }
+
+          if (payload.eventType === "INSERT") {
+            const inserted = payload.new as Order;
+            if (inserted.is_archived) return;
+            setOrders((prev) => {
+              if (prev.some((o) => o.id === inserted.id)) return prev;
+              return [...prev, inserted];
+            });
+          }
+
+          if (payload.eventType === "DELETE") {
+            const oldId = (payload.old as { id?: string })?.id;
+            if (!oldId) return;
+            setOrders((prev) => prev.filter((o) => o.id !== oldId));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   async function updateOrder(
     id: string,
