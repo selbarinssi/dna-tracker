@@ -4,8 +4,6 @@ import type { Tracker } from "@/types";
 
 export interface OrderForAssignment {
   team_code: string | null;
-  // any other fields are fine; we only use team_code
-  [key: string]: unknown;
 }
 
 /**
