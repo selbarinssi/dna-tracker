@@ -188,6 +188,9 @@ export function OrderTable({
 
                 {/* Always visible operational columns */}
                 <th className="text-left font-medium text-muted px-4 py-3 whitespace-nowrap">
+                  Tracker
+                </th>
+                <th className="text-left font-medium text-muted px-4 py-3 whitespace-nowrap">
                   Status
                 </th>
                 <th className="text-left font-medium text-muted px-4 py-3 whitespace-nowrap">
@@ -310,6 +313,21 @@ export function OrderTable({
                   )}
 
                   {/* Always visible operational */}
+                  <td className="px-4 py-3">
+                    {canEdit ? (
+                      <TrackerSelect
+                        value={order.tracker_id}
+                        trackers={trackers}
+                        onChange={(value) =>
+                          updateOrder(order.id, "tracker_id", value)
+                        }
+                        disabled={updatingId === order.id}
+                      />
+                    ) : (
+                      trackers.find((t) => t.id === order.tracker_id)?.name ||
+                      "—"
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     {canEdit ? (
                       <StatusSelect
