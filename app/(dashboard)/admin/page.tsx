@@ -23,10 +23,15 @@ export default function AdminPage() {
           </p>
         </Link>
 
-        <div className="p-5 bg-white border border-border rounded-xl shadow-soft opacity-60">
+        <Link
+          href="/admin/trackers"
+          className="block p-5 bg-white border border-border rounded-xl shadow-soft hover:border-border-strong transition-colors"
+        >
           <h2 className="font-medium text-ink">Trackers</h2>
-          <p className="text-sm text-muted mt-1">Coming next</p>
-        </div>
+          <p className="text-sm text-muted mt-1">
+            Add and activate trackers for assignment
+          </p>
+        </Link>
 
         <div className="p-5 bg-white border border-border rounded-xl shadow-soft opacity-60">
           <h2 className="font-medium text-ink">Rootcauses</h2>
