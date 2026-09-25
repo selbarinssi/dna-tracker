@@ -3,27 +3,28 @@
 "use client";
 
 import { RootcauseSelect } from "./RootcauseSelect";
-import { StatusBadge } from "./StatusBadge"; // if you want to show badge when not editing
 import { useState } from "react";
-import type { Order, OrderStatus, SolvingOwner } from "@/types";
+import type { Order, Tracker } from "@/types";
 import { StatusSelect } from "./StatusSelect";
 import { SolvingOwnerSelect } from "./SolvingOwnerSelect";
+import { TrackerSelect } from "./TrackerSelect";
 import { createClient } from "@/lib/supabase/client";
 import {
   useColumnVisibility,
   ColumnToggle,
-  type ColumnKey,
 } from "./ColumnToggle";
 
 interface OrderTableProps {
   orders: Order[];
   rootcauses: { id: string; label: string }[];
+  trackers?: Tracker[];
   canEdit?: boolean;
 }
 
 export function OrderTable({
   orders: initialOrders,
   rootcauses,
+  trackers = [],
   canEdit = false,
 }: OrderTableProps) {
   const [orders, setOrders] = useState(initialOrders);
@@ -31,45 +32,43 @@ export function OrderTable({
   const supabase = createClient();
   const { visible, toggle, isVisible, ready } = useColumnVisibility();
 
-    async function updateOrder(
-      id: string,
-      field: "status" | "solving_owner" | "comment" | "rootcause_id",
-      value: any
-    ) {
-      setUpdatingId(id);
-  
-      // Optimistic update
+  async function updateOrder(
+    id: string,
+    field: "status" | "solving_owner" | "comment" | "rootcause_id" | "tracker_id",
+    value: unknown
+  ) {
+    setUpdatingId(id);
+
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === id
+          ? { ...o, [field]: value, last_updated: new Date().toISOString() }
+          : o
+      )
+    );
+
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        [field]: value,
+        last_updated: new Date().toISOString(),
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Update failed:", error);
       setOrders((prev) =>
         prev.map((o) =>
           o.id === id
-            ? { ...o, [field]: value, last_updated: new Date().toISOString() }
+            ? initialOrders.find((orig) => orig.id === id) || o
             : o
         )
       );
-  
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          [field]: value,
-          last_updated: new Date().toISOString(),
-        })
-        .eq("id", id);
-  
-      if (error) {
-        console.error("Update failed:", error);
-        // Roll back only this order, keep other local changes
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.id === id
-              ? initialOrders.find((orig) => orig.id === id) || o
-              : o
-          )
-        );
-        alert(`Failed to save: ${error.message}`);
-      }
-  
-      setUpdatingId(null);
+      alert(`Failed to save: ${error.message}`);
     }
+
+    setUpdatingId(null);
+  }
 
   if (orders.length === 0) {
     return (
