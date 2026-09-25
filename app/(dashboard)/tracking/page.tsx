@@ -12,7 +12,8 @@ export default async function TrackingPage() {
       .from("orders")
       .select("*")
       .eq("is_archived", false)
-      .order("created_at", { ascending: false }),
+      .order("tracker_id", { ascending: true, nullsFirst: false })
+      .order("team_code", { ascending: true, nullsFirst: false }),
     supabase
       .from("rootcauses")
       .select("id, label")
